@@ -157,12 +157,32 @@ public class InProcessTaskCallbackApi
 
     @Override
     public StoredSessionAttempt startSession(
+      int siteId,
+      int projectId,
+      String workflowName,
+      Instant instant,
+      Optional<String> retryAttemptName,
+      Config overrideParams)
+      throws ResourceNotFoundException, ResourceLimitExceededException
+    {
+        return startSession(siteId,
+          projectId,
+          workflowName,
+          instant,
+          retryAttemptName,
+          overrideParams,
+          false);
+    }
+
+    @Override
+    public StoredSessionAttempt startSession(
             int siteId,
             int projectId,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
-            Config overrideParams)
+            Config overrideParams,
+            boolean isRequireOperatorTrigger)
         throws ResourceNotFoundException, ResourceLimitExceededException
     {
         return tm.<StoredSessionAttempt, ResourceNotFoundException, ResourceLimitExceededException>begin(() -> {
@@ -185,7 +205,7 @@ public class InProcessTaskCallbackApi
                             // TODO FIXME SessionMonitor monitors is not set
                             StoredSessionAttemptWithSession attempt;
                             try {
-                                attempt = exec.submitWorkflow(siteId, ar, def);
+                                attempt = exec.submitWorkflow(siteId, ar, def, isRequireOperatorTrigger);
                             }
                             catch (SessionAttemptConflictException ex) {
                                 attempt = ex.getConflictedSession();

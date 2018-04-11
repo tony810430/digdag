@@ -196,12 +196,21 @@ public class WorkflowExecutor
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
             WorkflowDefinition def)
+      throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
+    {
+        return submitWorkflow(siteId, ar, def, false);
+    }
+
+    public StoredSessionAttemptWithSession submitWorkflow(int siteId,
+            AttemptRequest ar,
+            WorkflowDefinition def,
+            boolean isRequireOperatorTrigger)
         throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
 
-        return submitTasks(siteId, ar, tasks);
+        return submitTasks(siteId, ar, tasks, isRequireOperatorTrigger);
     }
 
     private static final DateTimeFormatter SESSION_TIME_FORMATTER =
@@ -231,6 +240,13 @@ public class WorkflowExecutor
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
+      throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
+    {
+        return submitTasks(siteId, ar, tasks, false);
+    }
+
+    public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
+            WorkflowTaskList tasks, boolean isRequireOperatorTrigger)
         throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
     {
         if (logger.isTraceEnabled()) {
@@ -289,6 +305,14 @@ public class WorkflowExecutor
                                     "Project id={} name={} is already deleted",
                                     proj.getId(), proj.getName()));
                     }
+                    
+                    if (isRequireOperatorTrigger) {
+                        Optional<StoredSessionAttempt> latestAttempt = store.getLastAttemptIfExists(storedSession.getId());
+                        if (latestAttempt.isPresent()) {
+                            return StoredSessionAttemptWithSession.of(siteId, storedSession, latestAttempt.get());
+                        }
+                    }
+                    
                     StoredSessionAttempt storedAttempt = store.insertAttempt(storedSession.getId(), projId, attempt);  // this may throw ResourceConflictException
 
                     logger.info("Starting a new session project id={} workflow name={} session_time={}",

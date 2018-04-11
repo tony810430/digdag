@@ -44,4 +44,14 @@ public interface TaskCallbackApi
             Optional<String> retryAttemptName,
             Config overrideParams)
         throws ResourceNotFoundException, ResourceLimitExceededException;
+
+    StoredSessionAttempt startSession(
+      int siteId,
+      int projectId,
+      String workflowName,
+      Instant instant,
+      Optional<String> retryAttemptName,
+      Config overrideParams,
+      boolean isRequireOperatorTrigger)
+      throws ResourceNotFoundException, ResourceLimitExceededException;
 }

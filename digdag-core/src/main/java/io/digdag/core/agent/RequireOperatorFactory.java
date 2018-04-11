@@ -78,7 +78,8 @@ public class RequireOperatorFactory
                         workflowName,
                         instant,
                         retryAttemptName,
-                        overrideParams);
+                        overrideParams,
+                        true);
 
                 boolean isDone = attempt.getStateFlags().isDone();
                 if (isDone) {
